@@ -10,16 +10,16 @@ type Succincter struct {
 	superBlockSize int      // Size of a super-block in bits
 }
 
-func NewSuccincter(input []bool) *Succincter {
+func NewSuccincter[T any](input []T, predicate func(T) bool) *Succincter {
 	// Initialize block and superblock sizes
 	blockSize := 64        // For example, a block is 64 bits
 	superBlockSize := 1024 // A super-block contains multiple blocks
 
 	// Convert input to compact representation
-	data := internal.CompressToBitvector(input)
+	data := internal.CompressToBitVector(input, predicate)
 
 	// Precompute rank data for blocks and super-blocks
-	blockRanks, superBlocks := precomputeRank(data, blockSize, superBlockSize)
+	blockRanks, superBlocks := precomputeRank(data, superBlockSize)
 
 	return &Succincter{
 		data:           data,
@@ -47,7 +47,7 @@ func (s *Succincter) Select(rank int) int {
 	return blockIndex*s.blockSize + selectInBlock(s.data[blockIndex], blockRank)
 }
 
-func precomputeRank(data []uint64, blockSize, superBlockSize int) ([]uint32, []uint32) {
+func precomputeRank(data []uint64, superBlockSize int) ([]uint32, []uint32) {
 	var blockRanks []uint32
 	var superBlocks []uint32
 	currentRank := uint32(0)
