@@ -2,8 +2,24 @@ package succincter
 
 import (
 	"fmt"
+	"strings"
 	"testing"
+	"time"
+
+	"github.com/shaia/succincter/internal"
 )
+
+type benchResult struct {
+	name             string
+	size             int
+	pattern          string
+	rankTime         time.Duration
+	selectTime       time.Duration
+	buildTime        time.Duration
+	rankTimeSimple   time.Duration
+	selectTimeSimple time.Duration
+	buildTimeSimple  time.Duration
+}
 
 func BenchmarkCompareImplementations(b *testing.B) {
 	benchCases := []struct {
@@ -15,6 +31,8 @@ func BenchmarkCompareImplementations(b *testing.B) {
 		{"Small_Dense_1K", 1000, "dense"},
 		{"Medium_Sparse_10K", 10000, "sparse"},
 		{"Medium_Dense_10K", 10000, "dense"},
+		{"Large_Sparse_100K", 100000, "sparse"},
+		{"Large_Dense_100K", 100000, "dense"},
 	}
 
 	createTestData := func(size int, pattern string) []bool {
@@ -34,11 +52,19 @@ func BenchmarkCompareImplementations(b *testing.B) {
 		return data
 	}
 
+	var allResults []benchResult
+
 	for _, bc := range benchCases {
 		data := createTestData(bc.size, bc.pattern)
+		result := benchResult{
+			name:    bc.name,
+			size:    bc.size,
+			pattern: bc.pattern,
+		}
 
 		// Create instances outside the benchmark loop
 		succincter := NewSuccincter(data, func(b bool) bool { return b })
+		simpleArray := internal.NewSimpleArray(data)
 
 		// Test positions for Rank operations
 		positions := []int{
@@ -62,30 +88,96 @@ func BenchmarkCompareImplementations(b *testing.B) {
 		// Benchmark Rank operations
 		b.Run(fmt.Sprintf("Rank_Succincter_%s", bc.name), func(b *testing.B) {
 			b.ResetTimer()
+			start := time.Now()
 			for i := 0; i < b.N; i++ {
 				for _, pos := range positions {
 					_ = succincter.Rank(pos)
 				}
 			}
+			result.rankTime = time.Since(start) / time.Duration(b.N)
+		})
+
+		b.Run(fmt.Sprintf("Rank_Simple_%s", bc.name), func(b *testing.B) {
+			b.ResetTimer()
+			start := time.Now()
+			for i := 0; i < b.N; i++ {
+				for _, pos := range positions {
+					_ = simpleArray.Rank(pos)
+				}
+			}
+			result.rankTimeSimple = time.Since(start) / time.Duration(b.N)
 		})
 
 		// Benchmark Select operations
 		b.Run(fmt.Sprintf("Select_Succincter_%s", bc.name), func(b *testing.B) {
 			b.ResetTimer()
+			start := time.Now()
 			for i := 0; i < b.N; i++ {
 				for _, rank := range ranks {
 					_ = succincter.Select(rank)
 				}
 			}
+			result.selectTime = time.Since(start) / time.Duration(b.N)
+		})
+
+		b.Run(fmt.Sprintf("Select_Simple_%s", bc.name), func(b *testing.B) {
+			b.ResetTimer()
+			start := time.Now()
+			for i := 0; i < b.N; i++ {
+				for _, rank := range ranks {
+					_ = simpleArray.Select(rank)
+				}
+			}
+			result.selectTimeSimple = time.Since(start) / time.Duration(b.N)
 		})
 
 		// Benchmark construction time
 		b.Run(fmt.Sprintf("Build_Succincter_%s", bc.name), func(b *testing.B) {
 			b.ResetTimer()
+			start := time.Now()
 			for i := 0; i < b.N; i++ {
 				_ = NewSuccincter(data, func(b bool) bool { return b })
 			}
+			result.buildTime = time.Since(start) / time.Duration(b.N)
 		})
+
+		b.Run(fmt.Sprintf("Build_Simple_%s", bc.name), func(b *testing.B) {
+			b.ResetTimer()
+			start := time.Now()
+			for i := 0; i < b.N; i++ {
+				_ = internal.NewSimpleArray(data)
+			}
+			result.buildTimeSimple = time.Since(start) / time.Duration(b.N)
+		})
+
+		allResults = append(allResults, result)
+	}
+
+	// Print final comparison table
+	fmt.Printf("\nBenchmark Results:\n")
+	fmt.Printf("%-20s %-10s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n",
+		"Size", "Pattern",
+		"Rank (µs)", "Rank Simple (µs)", "Rank Speedup",
+		"Select (µs)", "Select Simple (µs)", "Select Speedup",
+		"Build (µs)", "Build Simple (µs)", "Build Speedup")
+	fmt.Println(strings.Repeat("-", 150))
+
+	for _, r := range allResults {
+		rankSpeedup := float64(r.rankTimeSimple) / float64(r.rankTime)
+		selectSpeedup := float64(r.selectTimeSimple) / float64(r.selectTime)
+		buildSpeedup := float64(r.buildTimeSimple) / float64(r.buildTime)
+
+		fmt.Printf("%-20s %-10s %15.3f %15.3f %15.2fx %15.3f %15.3f %15.2fx %15.3f %15.3f %15.2fx\n",
+			r.name, r.pattern,
+			float64(r.rankTime)/float64(time.Microsecond),
+			float64(r.rankTimeSimple)/float64(time.Microsecond),
+			rankSpeedup,
+			float64(r.selectTime)/float64(time.Microsecond),
+			float64(r.selectTimeSimple)/float64(time.Microsecond),
+			selectSpeedup,
+			float64(r.buildTime)/float64(time.Microsecond),
+			float64(r.buildTimeSimple)/float64(time.Microsecond),
+			buildSpeedup)
 	}
 }
 
