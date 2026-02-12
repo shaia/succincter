@@ -2,98 +2,101 @@ package succincter
 
 import "github.com/shaia/succincter/internal"
 
-type Succincter struct {
-	data           []uint64 // Data stored in blocks
-	blockRanks     []uint32 // Precomputed rank information for each block
-	superBlocks    []uint32 // Precomputed rank for super-blocks
-	blockSize      int      // Size of a block in bits
-	superBlockSize int      // Size of a super-block in bits
+// RankSelector is the interface for data structures supporting rank and select queries.
+type RankSelector interface {
+	Rank(pos int) int
+	Select(rank int) int
 }
 
+// Succincter is a succinct data structure for O(1) rank and O(log n) select queries
+// on boolean arrays, with ~1.5 bits per element overhead.
+type Succincter struct {
+	data               []uint64
+	blockRanks         []uint64
+	superBlocks        []uint64
+	blockSize          int
+	superBlockSize     int
+	blocksPerSuperBlock int
+	totalOnes          int
+}
+
+// NewSuccincter constructs a Succincter from any slice using a predicate to determine 1-bits.
+// Construction is O(n).
 func NewSuccincter[T any](input []T, predicate func(T) bool) *Succincter {
-	// Initialize block and superblock sizes
-	blockSize := 64        // For example, a block is 64 bits
-	superBlockSize := 1024 // A super-block contains multiple blocks
+	blockSize := 64
+	superBlockSize := 1024
+	blocksPerSuperBlock := superBlockSize / blockSize
 
-	// Convert input to compact representation
 	data := internal.CompressToBitVector(input, predicate)
-
-	// Precompute rank data for blocks and super-blocks
-	blockRanks, superBlocks := precomputeRank(data, superBlockSize)
+	blockRanks, superBlocks, totalOnes := precomputeRank(data, blocksPerSuperBlock)
 
 	return &Succincter{
-		data:           data,
-		blockRanks:     blockRanks,
-		superBlocks:    superBlocks,
-		blockSize:      blockSize,
-		superBlockSize: superBlockSize,
+		data:               data,
+		blockRanks:         blockRanks,
+		superBlocks:        superBlocks,
+		blockSize:          blockSize,
+		superBlockSize:     superBlockSize,
+		blocksPerSuperBlock: blocksPerSuperBlock,
+		totalOnes:          totalOnes,
 	}
 }
 
+// Rank returns the count of 1-bits before position pos. O(1) time.
+// Returns 0 for pos <= 0 or empty arrays.
 func (s *Succincter) Rank(pos int) int {
+	if pos <= 0 || len(s.data) == 0 {
+		return 0
+	}
+	maxPos := len(s.data) * s.blockSize
+	if pos >= maxPos {
+		pos = maxPos - 1
+	}
 	blockIndex := pos / s.blockSize
 	offset := pos % s.blockSize
-	rank := int(s.superBlocks[blockIndex/s.superBlockSize])
-	rank += int(s.blockRanks[blockIndex])
-	rank += popcount(s.data[blockIndex] & ((1 << offset) - 1))
+	rank := int(s.blockRanks[blockIndex])
+	rank += internal.Popcount(s.data[blockIndex] & ((1 << offset) - 1))
 	return rank
 }
 
+// Select returns the position of the rank-th 1-bit (1-indexed). O(log n) time.
+// Returns -1 for invalid ranks or empty arrays.
 func (s *Succincter) Select(rank int) int {
-	// Binary search for the superblock and block containing the rank
-	superBlockIndex := binarySearch(s.superBlocks, rank)
-	blockIndex := binarySearch(s.blockRanks[superBlockIndex:], rank)
-	blockRank := rank - int(s.blockRanks[blockIndex])
-	return blockIndex*s.blockSize + selectInBlock(s.data[blockIndex], blockRank)
+	if rank <= 0 || len(s.data) == 0 {
+		return -1
+	}
+	if rank > s.totalOnes {
+		return -1
+	}
+
+	superBlockIndex := internal.BinarySearch(s.superBlocks, rank)
+
+	startBlock := superBlockIndex * s.blocksPerSuperBlock
+	endBlock := startBlock + s.blocksPerSuperBlock
+	if endBlock > len(s.blockRanks) {
+		endBlock = len(s.blockRanks)
+	}
+	relativeBlockIndex := internal.BinarySearch(s.blockRanks[startBlock:endBlock], rank)
+	if relativeBlockIndex < 0 {
+		relativeBlockIndex = 0
+	}
+	absoluteBlockIndex := startBlock + relativeBlockIndex
+
+	blockRank := rank - int(s.blockRanks[absoluteBlockIndex])
+	return absoluteBlockIndex*s.blockSize + internal.SelectInBlock(s.data[absoluteBlockIndex], blockRank)
 }
 
-func precomputeRank(data []uint64, superBlockSize int) ([]uint32, []uint32) {
-	var blockRanks []uint32
-	var superBlocks []uint32
-	currentRank := uint32(0)
+func precomputeRank(data []uint64, blocksPerSuperBlock int) ([]uint64, []uint64, int) {
+	var blockRanks []uint64
+	var superBlocks []uint64
+	currentRank := uint64(0)
 
 	for i, block := range data {
-		if i%superBlockSize == 0 {
+		if i%blocksPerSuperBlock == 0 {
 			superBlocks = append(superBlocks, currentRank)
 		}
 		blockRanks = append(blockRanks, currentRank)
-		currentRank += uint32(popcount(block)) // Count 1-bits in the block
+		currentRank += uint64(internal.Popcount(block))
 	}
 
-	return blockRanks, superBlocks
-}
-
-func popcount(x uint64) int {
-	count := 0
-	for x != 0 {
-		count += int(x & 1)
-		x >>= 1
-	}
-	return count
-}
-
-func selectInBlock(block uint64, rank int) int {
-	count := 0
-	for i := 0; i < 64; i++ {
-		if (block & (1 << i)) != 0 {
-			count++
-			if count == rank {
-				return i
-			}
-		}
-	}
-	return -1 // Not found
-}
-
-func binarySearch(array []uint32, target int) int {
-	low, high := 0, len(array)-1
-	for low <= high {
-		mid := (low + high) / 2
-		if int(array[mid]) <= target {
-			low = mid + 1
-		} else {
-			high = mid - 1
-		}
-	}
-	return low - 1
+	return blockRanks, superBlocks, int(currentRank)
 }
