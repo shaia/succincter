@@ -21,7 +21,7 @@
 
 - [x] **M6: API Documentation** — Godoc on all exported types/functions
 - [x] **M7: Root README** — Overview, install, quick start, API, performance, thread-safety
-- [x] **M8: Alternative Evaluation** — GO decision documented in `docs/internal/`
+- [x] **M8: Alternative Evaluation** — GO decision documented in Decision Log section of this roadmap
 
 ### Performance
 - [x] **M9: Performance Validation** — Benchmarks confirm O(1) rank (~13ns), O(log n) select (~100-120ns)
@@ -67,7 +67,7 @@
 |---------------------------------------------------|--------------------------------------------------------------------------------------------|
 | Hybrid parallel workstreams over sequential       | Parallel allows early course correction; Week 3 decision point enables pivot               |
 | Fix existing library over find/build alternative  | Isolated bugs in predictable patterns; 3-4 weeks vs 4-6 weeks for new implementation       |
-| uint64 for rank arrays over document limitations  | uint32 limits to 537M elements with silent data corruption; uint64 is correct solution     |
+| uint64 for rank arrays over uint32 limitations    | uint32 limits to 537M elements with silent data corruption; uint64 is correct solution     |
 | 95% coverage achieved (85% target)                | Target was 85% (diminishing returns); exceeded to 95% via fuzz testing edge cases          |
 | Fuzz testing over only example-based              | Example tests found 0 of 4 bugs; fuzz testing explores input space systematically          |
 | Hardware popcount (math/bits) over software       | Software popcount 10-50x slower; math/bits provides automatic fallback                     |
