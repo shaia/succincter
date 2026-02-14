@@ -196,22 +196,23 @@ func TestCompareImplementations(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			succincter := NewSuccincter(tt.input, func(b bool) bool { return b })
+			succ := NewSuccincter(tt.input, func(b bool) bool { return b })
+			simple := internal.NewSimpleArray(tt.input)
 
 			// Test Rank operations
 			for pos := 0; pos <= len(tt.input); pos++ {
-				succRank := succincter.Rank(pos)
-				simpleRank := succincter.Rank(pos)
+				succRank := succ.Rank(pos)
+				simpleRank := simple.Rank(pos)
 				if succRank != simpleRank {
 					t.Errorf("Rank(%d) mismatch: Succincter=%d, Simple=%d", pos, succRank, simpleRank)
 				}
 			}
 
 			// Test Select operations
-			maxOnes := succincter.Rank(len(tt.input))
+			maxOnes := succ.Rank(len(tt.input))
 			for rank := 1; rank <= maxOnes+1; rank++ {
-				succSelect := succincter.Select(rank)
-				simpleSelect := succincter.Select(rank)
+				succSelect := succ.Select(rank)
+				simpleSelect := simple.Select(rank)
 				if succSelect != simpleSelect {
 					t.Errorf("Select(%d) mismatch: Succincter=%d, Simple=%d", rank, succSelect, simpleSelect)
 				}

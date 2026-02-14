@@ -112,3 +112,41 @@ func BenchmarkSuccincterMemory(b *testing.B) {
 		})
 	}
 }
+
+func BenchmarkScalability(b *testing.B) {
+	sizes := []int{1000, 10000, 100000, 1000000, 10000000}
+	var result int
+
+	for _, size := range sizes {
+		data := make([]bool, size)
+		for i := range data {
+			data[i] = i%2 == 0
+		}
+
+		b.Run(fmt.Sprintf("Build/Size_%d", size), func(b *testing.B) {
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				_ = NewSuccincter(data, func(b bool) bool { return b })
+			}
+		})
+
+		s := NewSuccincter(data, func(b bool) bool { return b })
+		totalOnes := s.Rank(size)
+
+		b.Run(fmt.Sprintf("Rank/Size_%d", size), func(b *testing.B) {
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				result = s.Rank(size / 2)
+			}
+		})
+
+		b.Run(fmt.Sprintf("Select/Size_%d", size), func(b *testing.B) {
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				result = s.Select(totalOnes / 2)
+			}
+		})
+	}
+	_ = result
+}
