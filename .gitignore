@@ -35,3 +35,7 @@ go.work.sum
 
 # Internal documentation
 docs/internal/
+
+# Python virtual environments
+.venv/
+__pycache__/
