@@ -49,12 +49,12 @@ func (s *Succincter) Rank(pos int) int {
 	}
 	maxPos := len(s.data) * s.blockSize
 	if pos >= maxPos {
-		pos = maxPos - 1
+		return s.totalOnes
 	}
 	blockIndex := pos / s.blockSize
 	offset := pos % s.blockSize
 	rank := int(s.blockRanks[blockIndex])
-	rank += internal.Popcount(s.data[blockIndex] & ((1 << offset) - 1))
+	rank += internal.Popcount(s.data[blockIndex] & ((uint64(1) << offset) - 1))
 	return rank
 }
 
@@ -69,6 +69,9 @@ func (s *Succincter) Select(rank int) int {
 	}
 
 	superBlockIndex := internal.BinarySearch(s.superBlocks, rank)
+	if superBlockIndex < 0 {
+		superBlockIndex = 0
+	}
 
 	startBlock := superBlockIndex * s.blocksPerSuperBlock
 	endBlock := startBlock + s.blocksPerSuperBlock

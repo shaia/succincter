@@ -13,7 +13,7 @@ func Popcount(x uint64) int {
 func SelectInBlock(block uint64, rank int) int {
 	count := 0
 	for i := 0; i < 64; i++ {
-		if (block & (1 << i)) != 0 {
+		if (block & (uint64(1) << i)) != 0 {
 			count++
 			if count == rank {
 				return i

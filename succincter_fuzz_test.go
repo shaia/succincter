@@ -23,8 +23,8 @@ func FuzzRank(f *testing.F) {
 		s := NewSuccincter(input, func(b bool) bool { return b })
 
 		prevRank := s.Rank(0)
-		if prevRank < 0 {
-			t.Errorf("Rank(0) = %d; must be non-negative", prevRank)
+		if prevRank != 0 {
+			t.Errorf("Rank(0) = %d; must be exactly 0", prevRank)
 			return
 		}
 
