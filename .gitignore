@@ -33,8 +33,8 @@ go.work.sum
 # env file
 .env
 
-# Internal documentation
-docs/internal/
+# Documentation (not tracked in repo)
+docs/
 
 # Python virtual environments
 .venv/

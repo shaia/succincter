@@ -31,7 +31,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Space `nH₀(B) + o(n)` — significantly less than `Succincter`'s 1.5n bits for sparse/dense bitvectors
   - Cross-validated against `Succincter` in unit tests (`rrr_test.go`) and fuzz tests (`rrr_fuzz_test.go`)
   - Build/rank/select/space benchmarks in `rrr_benchmark_test.go`
-  - Worked encode/decode walkthrough at [docs/combinatorial-walkthrough.md](docs/combinatorial-walkthrough.md)
 
 ### Fixed
 
