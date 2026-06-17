@@ -57,15 +57,21 @@ type RankSelector interface {
 }
 ```
 
-`Succincter` implements this interface.
+Both `Succincter` and `RRR` implement this interface, so callers can swap implementations without changing query sites.
 
-### Constructor
+### Constructors
 
 #### `NewSuccincter[T any](input []T, predicate func(T) bool) *Succincter`
 
-Creates a Succincter from any slice using a predicate to determine 1-bits. O(n) construction.
+Creates a Succincter (plain bitvector + rank/select index) from any slice using a predicate to determine 1-bits. O(n) construction, ~1.5 bits/element overhead.
+
+#### `NewRRR[T any](input []T, predicate func(T) bool) *RRR`
+
+Creates an RRR-compressed structure with the same predicate-based API. Achieves `nH₀(B) + o(n)` space using block size b=15 with combinatorial (class, offset) encoding. Rank is O(1) and Select is O(log n) — same complexity as Succincter but with a higher rank constant (~50–200ns) due to combinatorial decoding on each query. See [docs/zero-order-compression.md](docs/zero-order-compression.md) for the space/speed tradeoff in detail.
 
 ### Methods
+
+The same methods exist on `*Succincter` and `*RRR` with identical signatures and edge-case behavior.
 
 #### `Rank(pos int) int`
 
@@ -78,6 +84,12 @@ Returns 0 for `pos <= 0` or empty arrays.
 Returns the position of the `rank`-th 1-bit (1-indexed). O(log n) time.
 
 Returns -1 for invalid ranks or empty arrays.
+
+### Choosing Between `Succincter` and `RRR`
+
+- **Use `Succincter`** when density is near 50%, or when rank latency is the priority — no decode step on the hot path.
+- **Use `RRR`** when the bitvector is sparse or dense (≪ 50% or ≫ 50% ones) and memory is the bottleneck — space approaches the zero-order entropy `nH₀(B)`, which can be a fraction of Succincter's 1.5n bits.
+- Both are immutable after construction and safe for concurrent reads with no synchronization.
 
 ### Version
 

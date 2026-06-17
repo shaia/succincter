@@ -41,9 +41,9 @@
 - [x] **Z2: RRR construction** — `rrr.go`: NewRRR with block size 15, class/offset packing, superblock index
 - [x] **Z3: RRR Rank/Select** — O(1) rank and O(log n) select on compressed bitvector
 - [x] **Z4: RRR tests** — Exhaustive combinatorial tests, cross-validation vs Succincter, boundary tests
-- [ ] **Z5: RRR benchmarks** — Build/Rank/Select benchmarks, space measurement, comparison vs Succincter
-- [ ] **Z6: RRR fuzz tests** — FuzzRRRRank, FuzzRRRSelect with cross-validation
-- [ ] **Z7: Encode/decode walkthrough** — Document combinatorial encoding algorithm with worked example (e.g., β=0100 → o=2)
+- [x] **Z5: RRR benchmarks** — Build/Rank/Select benchmarks, space measurement, comparison vs Succincter
+- [x] **Z6: RRR fuzz tests** — FuzzRRRRank, FuzzRRRSelect with cross-validation
+- [x] **Z7: Encode/decode walkthrough** — Document combinatorial encoding algorithm with worked example (e.g., β=0100 → o=2)
 
 ### Higher-Order Compression (Hk)
 
