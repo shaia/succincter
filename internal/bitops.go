@@ -37,3 +37,19 @@ func BinarySearch(array []uint64, target int) int {
 	}
 	return low - 1
 }
+
+// BinarySearchHighBits returns the index of the last element whose high
+// 32 bits, interpreted as an int, are strictly less than target.
+// Returns -1 if no such element exists.
+func BinarySearchHighBits(array []uint64, target int) int {
+	low, high := 0, len(array)-1
+	for low <= high {
+		mid := (low + high) / 2
+		if int(array[mid]>>32) < target {
+			low = mid + 1
+		} else {
+			high = mid - 1
+		}
+	}
+	return low - 1
+}

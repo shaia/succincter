@@ -175,13 +175,9 @@ func (r *RRR) Select(rank int) int {
 		return -1
 	}
 
-	sbIdx := 0
-	for sbIdx < len(r.superBlocks)-1 {
-		nextSBRank := int(r.superBlocks[sbIdx+1] >> 32)
-		if nextSBRank >= rank {
-			break
-		}
-		sbIdx++
+	sbIdx := internal.BinarySearchHighBits(r.superBlocks, rank)
+	if sbIdx < 0 {
+		sbIdx = 0
 	}
 
 	sb := r.superBlocks[sbIdx]
