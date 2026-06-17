@@ -67,7 +67,7 @@ Creates a Succincter (plain bitvector + rank/select index) from any slice using 
 
 #### `NewRRR[T any](input []T, predicate func(T) bool) *RRR`
 
-Creates an RRR-compressed structure with the same predicate-based API. Achieves `nH₀(B) + o(n)` space using block size b=15 with combinatorial (class, offset) encoding. Rank is O(1) and Select is O(log n) — same complexity as Succincter but with a higher rank constant (~50–200ns) due to combinatorial decoding on each query. See [docs/zero-order-compression.md](docs/zero-order-compression.md) for the space/speed tradeoff in detail.
+Creates an RRR-compressed structure with the same predicate-based API. Achieves `nH₀(B) + o(n)` space using block size b=15 with combinatorial (class, offset) encoding. Rank is O(1) and Select is O(log n) — same complexity as Succincter but with a higher rank constant (~50–200ns) due to combinatorial decoding on each query.
 
 ### Methods
 
@@ -141,8 +141,7 @@ go run ./examples/loganalysis
 
 ## Documentation
 
-- [Finding Errors in Log Streams](docs/posts/finding-errors-in-log-streams.md) - Real-world usage tutorial
-- [Combinatorial Encoding](docs/posts/combinatorial-encoding-for-compression.md) - Foundation for RRR compression
+**RRR encoding (combinatorial number system):** each 15-bit block is stored as a `(class, offset)` pair, where `class` is the popcount and `offset` is the block's index among `C(15, class)` patterns. The offset shrinks from 15 bits at class = 7/8 down to 9 bits at class = 3 and 4 bits at class = 1 — that compression vs. raw bits is where the `nH₀(B)` space bound comes from.
 
 ## Thread Safety
 
