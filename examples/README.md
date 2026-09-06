@@ -98,7 +98,7 @@ Demonstrates:
 - Indexing structured data (log entries) by a field predicate
 - Counting errors before a timestamp/position
 - Finding the Nth error for pagination
-- Performance comparison vs naive O(n) scanning (~50,000x speedup)
+- Performance comparison vs naive O(n) scanning (~113,000x at 1M entries)
 
 Use cases:
 - Log monitoring dashboards
@@ -245,13 +245,18 @@ Use cases:
 
 All examples demonstrate O(1) rank and O(log n) select queries, compared to O(n) for naive filtering approaches:
 
-| Dataset Size | Naive Filter | Succincter Rank | Speedup |
-|--------------|--------------|-----------------|---------|
-| 100K         | ~10µs        | ~2ns            | 5,000x  |
-| 1M           | ~100µs       | ~2ns            | 50,000x |
-| 10M          | ~1ms         | ~2ns            | 500,000x|
+| Dataset Size | Naive Filter | Succincter Rank | Speedup     |
+|--------------|--------------|-----------------|-------------|
+| 100K         | 161µs        | 14.0ns          | ~11,500x    |
+| 1M           | 1.88ms       | 16.6ns          | ~113,000x   |
+| 10M          | 20.6ms       | 18.0ns          | ~1,145,000x |
 
-Construction is O(n) and happens once. Queries are nearly instant regardless of data size.
+Measured on a 13th Gen Intel Core i9-13980HX, Go 1.25.5, querying scattered
+positions. Repeatedly ranking the *same* position measures ~2.6ns instead, because
+its cache lines stay in L1 — a best case rather than a typical one. Full
+measurements: [docs/bench/results.md](../docs/bench/results.md).
+
+Construction is O(n) and happens once: 489µs at 100K, 5.1ms at 1M, 52.7ms at 10M.
 
 ## Creating Your Own
 
@@ -281,5 +286,5 @@ countInRange := activeIndex.Rank(end) - activeIndex.Rank(start)  // O(1)
 
 ## Further Reading
 
-- [Finding Errors in Log Streams](../docs/posts/finding-errors-in-log-streams.md) - Detailed tutorial
-- [Combinatorial Encoding](../docs/posts/combinatorial-encoding-for-compression.md) - Compression internals
+- [Finding Errors in Log Streams](https://slow-is-smooth.io/blog/finding-errors-in-log-streams/) - Detailed tutorial
+- [Benchmark results](../docs/bench/results.md) - Raw measurements and methodology
