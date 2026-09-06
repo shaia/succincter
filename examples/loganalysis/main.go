@@ -17,6 +17,11 @@ type LogEntry struct {
 	Message   string
 }
 
+// sink accumulates results from the timed loops below. Without it the compiler
+// is free to inline Rank and discard the call entirely, which makes the
+// measured time collapse toward zero and the reported speedup meaningless.
+var sink int
+
 func main() {
 	fmt.Println("=== Succincter Log Analysis Example ===")
 
@@ -99,7 +104,7 @@ func comparePerformance(logs []LogEntry, index *succincter.Succincter) {
 	naiveIterations := 100
 	start := time.Now()
 	for i := 0; i < naiveIterations; i++ {
-		naiveCountBefore(logs, testPos)
+		sink += naiveCountBefore(logs, testPos)
 	}
 	naiveTotal := time.Since(start)
 	naiveAvg := naiveTotal / time.Duration(naiveIterations)
@@ -108,7 +113,7 @@ func comparePerformance(logs []LogEntry, index *succincter.Succincter) {
 	succincterIterations := 1_000_000
 	start = time.Now()
 	for i := 0; i < succincterIterations; i++ {
-		index.Rank(testPos)
+		sink += index.Rank(testPos)
 	}
 	succincterTotal := time.Since(start)
 	succincterAvg := succincterTotal / time.Duration(succincterIterations)
@@ -117,6 +122,7 @@ func comparePerformance(logs []LogEntry, index *succincter.Succincter) {
 	fmt.Printf("  Naive:      %v avg (%d iterations)\n", naiveAvg, naiveIterations)
 	fmt.Printf("  Succincter: %v avg (%d iterations)\n", succincterAvg, succincterIterations)
 	fmt.Printf("  Speedup:    %.0fx\n", float64(naiveAvg)/float64(succincterAvg))
+	fmt.Printf("  (checksum %d, printed so the timed loops cannot be optimized away)\n", sink)
 }
 
 func naiveCountBefore(logs []LogEntry, pos int) int {

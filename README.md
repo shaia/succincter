@@ -7,7 +7,7 @@ A Go library implementing succinct data structures for efficient rank and select
 
 ## Overview
 
-Succincter provides O(1) rank queries and O(log n) select queries on compressed boolean arrays with only ~1.5 bits per element overhead. It uses a generic constructor that accepts any slice type and a predicate function.
+Succincter provides O(1) rank queries and O(log n) select queries on compressed boolean arrays, costing ~2.06 bits per element — bit vector and rank index combined, under a third of what a Go `[]bool` spends on the booleans alone. It uses a generic constructor that accepts any slice type and a predicate function.
 
 ## Installation
 
@@ -101,22 +101,38 @@ func FullVersion() string  // Returns version with prerelease tag if set
 
 ## Performance
 
-| Operation    | Time       | Space Overhead       |
-|-------------|------------|---------------------|
-| Construction | O(n)       | ~1.5 bits/element   |
+| Operation    | Time       | Space               |
+|--------------|------------|---------------------|
+| Construction | O(n)       | ~2.06 bits/element  |
 | Rank         | O(1)       | —                   |
 | Select       | O(log n)   | —                   |
 
+Space breaks down as 1 bit/element for the packed bit vector, 1 bit/element for
+the per-word rank index, and 1/16 bit/element for the superblock index. Measured
+heap is ~2.18 bits/element, since both index arrays are grown with `append` and
+no preallocation.
+
 ### Benchmarks
 
-Measured on Intel Core Ultra 9 (see `go test -bench=.` for your system):
+Measured on a 13th Gen Intel Core i9-13980HX, Go 1.25.5, querying **scattered**
+positions (see `go test -bench=.` for your system):
 
-| Dataset Size | Naive Rank | Succincter Rank | Speedup |
-|--------------|------------|-----------------|---------|
-| 10K          | ~3µs       | ~13ns           | ~220x   |
-| 100K         | ~30µs      | ~13ns           | ~2,300x |
+| Dataset Size | Naive Rank | Succincter Rank | Speedup     |
+|--------------|------------|-----------------|-------------|
+| 10K          | 3.60µs     | 2.7ns           | ~1,300x     |
+| 100K         | 161µs      | 14.0ns          | ~11,500x    |
+| 1M           | 1.88ms     | 16.6ns          | ~113,000x   |
+| 10M          | 20.6ms     | 18.0ns          | ~1,145,000x |
 
-Speedup scales linearly with data size (naive is O(n), Succincter is O(1)).
+Naive is O(n) with a constant that worsens as the scan falls out of cache;
+Succincter's rank is O(1).
+
+Note that repeatedly ranking the *same* position measures ~2.6ns, because its
+cache lines never leave L1. That best case is not what a real workload sees — the
+table above uses scattered positions. Select is more cache-sensitive still:
+~17-30ns for a repeated rank against ~228-533ns for scattered ranks.
+
+Full measurements and methodology: [docs/bench/results.md](docs/bench/results.md).
 
 Run benchmarks:
 
@@ -140,6 +156,9 @@ go run ./examples/loganalysis
 ```
 
 ## Documentation
+
+- [Finding Errors in Log Streams](https://slow-is-smooth.io/blog/finding-errors-in-log-streams/) - Real-world usage tutorial
+- [Benchmark results](docs/bench/results.md) - Raw measurements and methodology
 
 **RRR encoding (combinatorial number system):** each 15-bit block is stored as a `(class, offset)` pair, where `class` is the popcount and `offset` is the block's index among `C(15, class)` patterns. The offset shrinks from 15 bits at class = 7/8 down to 9 bits at class = 3 and 4 bits at class = 1 — that compression vs. raw bits is where the `nH₀(B)` space bound comes from.
 

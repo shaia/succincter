@@ -24,9 +24,12 @@
 - [x] **M8: Alternative Evaluation** — GO decision documented in Decision Log section of this roadmap
 
 ### Performance
-- [x] **M9: Performance Validation** — Benchmarks confirm O(1) rank (~13ns), O(log n) select (~100-120ns)
+- [x] **M9: Performance Validation** — Benchmarks confirm O(1) rank (~14-18ns scattered,
+      ~2.6ns same-position hot cache), O(log n) select (~228-533ns scattered)
   - [x] Scalability benchmarks across 1K–10M elements
-  - [x] Memory overhead validated at ~1.5 bits/element
+  - [x] Memory overhead validated at 2.06 bits/element analytical, ~2.18 measured
+        (see `docs/bench/results.md`). The earlier ~1.5 figure described the
+        pre-`uint64` index layout.
 
 ### Refactoring
 - [x] **R1: Extract bit operations** — `internal/bitops.go` (Popcount, SelectInBlock, BinarySearch)
@@ -105,7 +108,7 @@ Query Phase:
 
 ### Design Tradeoffs
 
-- **Memory vs Speed**: ~1.5 bits/element overhead for O(1) rank (vs O(n) naive)
+- **Memory vs Speed**: ~2.06 bits/element for O(1) rank (vs O(n) naive)
 - **Construction vs Query**: One-time O(n) construction for amortized O(1) queries
 - **Generic API vs Performance**: Generic predicate adds negligible overhead vs flexibility gained
 - **uint64 vs uint32 Ranks**: uint64 doubles rank memory but prevents silent overflow at >537M elements
