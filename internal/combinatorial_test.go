@@ -70,11 +70,22 @@ func TestOffsetBits(t *testing.T) {
 		class    int
 		expected int
 	}{
+		// Every class, so the cost table in
+		// docs/combinatorial-walkthrough.md stays honest.
 		{0, 0},   // C(15,0) = 1, need 0 bits
 		{1, 4},   // C(15,1) = 15, need 4 bits (ceil(log2(15)) = 4)
 		{2, 7},   // C(15,2) = 105, need 7 bits
+		{3, 9},   // C(15,3) = 455, need 9 bits
+		{4, 11},  // C(15,4) = 1365, need 11 bits
+		{5, 12},  // C(15,5) = 3003, need 12 bits
+		{6, 13},  // C(15,6) = 5005, need 13 bits
 		{7, 13},  // C(15,7) = 6435, need 13 bits
 		{8, 13},  // C(15,8) = 6435, need 13 bits
+		{9, 13},  // C(15,9) = 5005, need 13 bits
+		{10, 12}, // C(15,10) = 3003, need 12 bits
+		{11, 11}, // C(15,11) = 1365, need 11 bits
+		{12, 9},  // C(15,12) = 455, need 9 bits
+		{13, 7},  // C(15,13) = 105, need 7 bits
 		{14, 4},  // C(15,14) = 15, need 4 bits
 		{15, 0},  // C(15,15) = 1, need 0 bits
 	}
@@ -161,12 +172,16 @@ func TestWorkedExamples(t *testing.T) {
 		t.Errorf("CombDecode(1, 8, 15) = 0x%x; want 0x0100", decoded)
 	}
 
-	// Another example: 0x0006 = bits 1,2 set, class=2
-	// Patterns before: 0x0003 (bits 0,1)
-	// offset should be 1
+	// Another example: 0x0006 = bits 1,2 set, class=2. This is the worked
+	// example in docs/combinatorial-walkthrough.md.
+	// Two class-2 patterns are numerically smaller: 0x0003 (bits 0,1) and
+	// 0x0005 (bits 0,2). So offset is 2.
 	block2 := uint16(0x0006) // bits 1,2 set
 	class2 := bits.OnesCount16(block2)
 	offset2 := CombEncode(block2, class2)
+	if offset2 != 2 {
+		t.Errorf("CombEncode(0x0006, 2) = %d; want 2", offset2)
+	}
 	decoded2 := CombDecode(class2, offset2, 15)
 	if decoded2 != block2 {
 		t.Errorf("roundtrip failed for 0x%x: got 0x%x", block2, decoded2)
