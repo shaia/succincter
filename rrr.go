@@ -75,10 +75,10 @@ func NewRRR[T any](input []T, predicate func(T) bool) *RRR {
 		packClass(classes, blockIdx, class)
 	}
 
-	if totalOnes > math.MaxUint32 {
+	if uint64(totalOnes) > math.MaxUint32 {
 		panic("succincter: RRR does not support more than 2^32 ones; use Succincter for very large dense datasets")
 	}
-	if totalOffsetBits > math.MaxUint32 {
+	if uint64(totalOffsetBits) > math.MaxUint32 {
 		panic("succincter: RRR offset storage exceeds uint32 capacity")
 	}
 
