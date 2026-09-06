@@ -10,7 +10,9 @@ This file walks the algorithm on β = `0100` (b = 4, class = 1). The answer is o
 
 ## Encode: 0100 → 2
 
-`CombEncode` scans bit positions from MSB (position 3) down to LSB (position 0). At each 1-bit it adds `C(p, onesLeft)` to the running offset and decrements `onesLeft`. That coefficient counts the patterns lexicographically smaller than β that have a 0 at this position.
+`CombEncode(block, class)` takes no width parameter — it always scans from bit 14 down to bit 0, since the coefficient `C(p, r)` depends only on the position and the ones remaining, never on `b`. The high bits of a 4-bit pattern are zero, so the trace below starts at position 3. (`CombDecode(class, offset, b)` *does* take `b`; only the decoder needs to know where to start.)
+
+At each 1-bit the encoder adds `C(p, onesLeft)` to the running offset and decrements `onesLeft`. That coefficient counts the patterns lexicographically smaller than β that have a 0 at this position.
 
 | bitPos `p` | bit | onesLeft `r` | C(p, r) added | offset after |
 |-----------:|----:|-------------:|--------------:|-------------:|
@@ -53,12 +55,14 @@ The full argument treats the set bit positions as a `c`-subset of `{0, …, b−
 
 ## Edge Cases
 
-`CombEncode` and `CombDecode` short-circuit when the class is extremal:
+An extremal class admits only one pattern, so its offset carries no information. The short-circuits for this are written against the **production block size of 15**, not against a general `b`:
 
-- **class = 0** → only one possible pattern (all zeros). Offset is 0, decode returns `0`. See [internal/combinatorial.go](../internal/combinatorial.go) lines 32–34 and 60–62.
-- **class = b** → only one possible pattern (all ones). Offset is 0, decode returns `(1 << b) - 1`. See [internal/combinatorial.go](../internal/combinatorial.go) lines 32–34 and 63–65.
+- **class = 0** → all zeros. `CombEncode` returns 0; `CombDecode` returns `0`.
+- **class = 15** → all ones. `CombEncode` returns 0; `CombDecode` returns `(1 << b) - 1` via its `class == b` test.
 
-`OffsetBits(class)` returns 0 for both, so no bits at all are written for these classes — the class itself (stored separately in 4 bits) is the entire encoding.
+`OffsetBits(class)` likewise special-cases only 0 and 15, and otherwise sizes the offset from `C(15, class)`. So at b = 15 no offset bits are written for either extreme, and the class alone (packed separately in 4 bits) is the entire encoding.
+
+**This does not generalize to the 4-bit example above.** `CombEncode`'s guard tests `class == 15` literally, so `CombEncode(0b1111, 4)` does not short-circuit — it falls through the loop and returns 0 only because the coefficients it reads are unpopulated (zero) table entries. And `OffsetBits(4)` returns 11, sizing an offset for `C(15, 4)` rather than the single 4-bit pattern. The toy width is a teaching device for the ranking itself; the extremal-class handling is 15-specific.
 
 ## See Also
 
