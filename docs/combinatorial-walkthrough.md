@@ -1,6 +1,6 @@
 # Combinatorial Encoding: A Tiny Worked Example
 
-A minimal walkthrough of how `CombEncode` and `CombDecode` map a bit pattern to its index among all patterns with the same popcount, and back. This page uses a 4-bit example so the whole derivation fits on one screen. For the canonical 15-bit case as it appears in production code, see [combinatorial-encoding-for-compression.md](posts/combinatorial-encoding-for-compression.md).
+A minimal walkthrough of how `CombEncode` and `CombDecode` map a bit pattern to its index among all patterns with the same popcount, and back. This page uses a 4-bit example so the whole derivation fits on one screen. For the canonical 15-bit case as it appears in production code, see [internal/combinatorial.go](../internal/combinatorial.go).
 
 ## The Problem
 
@@ -49,7 +49,7 @@ Result: bit 2 set, all others 0 → **`0100`**. ✓
 
 When the encoder sees a 1-bit at position `p` with `r` ones still to place (counting the current one), every pattern that has a 0 at position `p` and the same `r` ones spread across positions `0..p-1` comes before β in offset order. There are exactly `C(p, r)` such patterns — choose `r` positions for the remaining ones out of the `p` lower positions.
 
-The full lexicographic-ordering argument (treating bit positions as a `c`-subset of `{0, …, b−1}`) is laid out in [Why This Works](posts/combinatorial-encoding-for-compression.md#why-this-works).
+The full argument treats the set bit positions as a `c`-subset of `{0, …, b−1}` and ranks those subsets lexicographically.
 
 ## Edge Cases
 
@@ -62,7 +62,6 @@ The full lexicographic-ordering argument (treating bit positions as a `c`-subset
 
 ## See Also
 
-- [combinatorial-encoding-for-compression.md](posts/combinatorial-encoding-for-compression.md) — full 15-bit canonical example (β = `0b010110000000000` → o = 351), space analysis, performance numbers.
-- [zero-order-compression.md](zero-order-compression.md) — how RRR uses combinatorial encoding to achieve `nH₀(B) + o(n)` space.
+- [README.md](../README.md#documentation) — how RRR uses combinatorial encoding to reach the `nH₀(B) + o(n)` space bound.
 - [internal/combinatorial.go](../internal/combinatorial.go) — Go implementation of `CombEncode`, `CombDecode`, `OffsetBits`.
 - [rrr.go](../rrr.go) — how `NewRRR` calls `CombEncode` at construction and `Rank`/`Select` call `CombDecode` at query time.
