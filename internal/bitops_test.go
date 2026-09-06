@@ -1,6 +1,10 @@
 package internal
 
-import "testing"
+import (
+	"math"
+	"math/bits"
+	"testing"
+)
 
 func TestBinarySearchHighBits(t *testing.T) {
 	pack := func(rank uint64, offsetBits uint64) uint64 {
@@ -67,6 +71,26 @@ func TestBinarySearchHighBits(t *testing.T) {
 			target: 15,
 			want:   1,
 		},
+		{
+			name:   "zero target returns -1",
+			array:  []uint64{pack(0, 1), pack(5, 2)},
+			target: 0,
+			want:   -1,
+		},
+		{
+			name:   "negative target returns -1",
+			array:  []uint64{pack(0, 1), pack(5, 2)},
+			target: -5,
+			want:   -1,
+		},
+		{
+			// A rank above MaxInt32 must not wrap negative where int is
+			// 32 bits, which would make it compare as less than target.
+			name:   "high bits above MaxInt32 compare as unsigned",
+			array:  []uint64{pack(0, 1), pack(3000000000, 2)},
+			target: 2000000000,
+			want:   0,
+		},
 	}
 
 	for _, tt := range tests {
@@ -76,5 +100,23 @@ func TestBinarySearchHighBits(t *testing.T) {
 				t.Errorf("BinarySearchHighBits(%v, %d) = %d; want %d", tt.array, tt.target, got, tt.want)
 			}
 		})
+	}
+}
+
+// A target above MaxUint32 must not be narrowed to uint32, which would
+// truncate it and understate every element. Only reachable where int is
+// 64 bits.
+func TestBinarySearchHighBitsTargetAboveMaxUint32(t *testing.T) {
+	if bits.UintSize < 64 {
+		t.Skip("requires a 64-bit int")
+	}
+	// Built through a variable so the conversion is not a constant
+	// expression, which would not compile on 32-bit builds.
+	var maxU32 uint64 = math.MaxUint32
+	target := int(maxU32) + 4
+
+	array := []uint64{5 << 32, 10 << 32}
+	if got := BinarySearchHighBits(array, target); got != 1 {
+		t.Errorf("BinarySearchHighBits(array, %d) = %d; want 1", target, got)
 	}
 }
