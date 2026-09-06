@@ -33,8 +33,10 @@ go.work.sum
 # env file
 .env
 
-# Internal documentation
+# Local-only documentation: internal notes and prose drafts.
+# Published docs under docs/ are tracked (see docs/bench/results.md).
 docs/internal/
+docs/drafts/
 
 # Python virtual environments
 .venv/

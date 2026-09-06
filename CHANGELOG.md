@@ -25,6 +25,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Foundation for RRR zero-order compression
   - Precomputed binomial coefficient table for b=15
   - Exhaustive tests for all 32768 15-bit patterns
+- **RRR zero-order compression (Z2–Z7)**: new `RRR` type with `NewRRR`, `Rank`, `Select`
+  - Block size b=15 with combinatorial (class, offset) encoding; superblock index every 16 blocks
+  - Same `RankSelector` interface and edge-case behavior as `Succincter`; O(1) rank, O(log n) select
+  - Space `nH₀(B) + o(n)` — significantly less than `Succincter`'s 1.5n bits for sparse/dense bitvectors
+  - Cross-validated against `Succincter` in unit tests (`rrr_test.go`) and fuzz tests (`rrr_fuzz_test.go`)
+  - Build/rank/select/space benchmarks in `rrr_benchmark_test.go`
 
 ### Fixed
 
