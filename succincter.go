@@ -9,7 +9,8 @@ type RankSelector interface {
 }
 
 // Succincter is a succinct data structure for O(1) rank and O(log n) select queries
-// on boolean arrays, with ~1.5 bits per element overhead.
+// on boolean arrays, costing ~2.06 bits per element: 1 bit for the packed bit
+// vector, 1 bit for the per-word rank index, and 1/16 bit for the superblock index.
 type Succincter struct {
 	data               []uint64
 	blockRanks         []uint64
