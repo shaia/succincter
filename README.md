@@ -159,8 +159,9 @@ go run ./examples/loganalysis
 
 - [Finding Errors in Log Streams](https://slow-is-smooth.io/blog/finding-errors-in-log-streams/) - Real-world usage tutorial
 - [Benchmark results](docs/bench/results.md) - Raw measurements and methodology
+- [Combinatorial encoding: a tiny worked example](docs/combinatorial-walkthrough.md) - How `CombEncode`/`CombDecode` map a block to `(class, offset)` and back
 
-**RRR encoding (combinatorial number system):** each 15-bit block is stored as a `(class, offset)` pair, where `class` is the popcount and `offset` is the block's index among `C(15, class)` patterns. The offset shrinks from 15 bits at class = 7/8 down to 9 bits at class = 3 and 4 bits at class = 1 — that compression vs. raw bits is where the `nH₀(B)` space bound comes from.
+**RRR encoding (combinatorial number system):** each 15-bit block is stored as a `(class, offset)` pair, where `class` is the popcount and `offset` is the block's index among `C(15, class)` patterns. The offset shrinks from 13 bits at class = 7/8 down to 9 bits at class = 3 and 4 bits at class = 1 — that compression vs. raw bits is where the `nH₀(B)` space bound comes from. Note the class itself costs 4 bits, so only skewed blocks are a net win; see the [walkthrough's cost table](docs/combinatorial-walkthrough.md#what-it-buys-and-when-it-doesnt).
 
 ## Thread Safety
 
