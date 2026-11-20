@@ -241,6 +241,34 @@ Use cases:
 
 ---
 
+#### [autocomplete](autocomplete/)
+
+**Diagnosis Search Box over ICD-10-CM**
+
+Builds a LOUDS trie (a tree stored as a bit string) on top of `Rank` and `Select`, and uses two of
+them to search all 74,879 ICD-10-CM diagnoses by word prefix. Needs the code descriptions file
+from the US National Center for Health Statistics:
+
+```bash
+curl -O "https://ftp.cdc.gov/pub/Health_Statistics/NCHS/Publications/ICD10CM/2027/icd10cm-code-descriptions-2027.zip"
+unzip icd10cm-code-descriptions-2027.zip
+go run ./examples/autocomplete -data icd10cm-code-descriptions-2027/icd10cm-codes-2027.txt
+```
+
+Demonstrates:
+- LOUDS navigation: a node's children from two `Select` calls
+- A node's parent from a binary search on `Rank`, since there is no select over 0s
+- A whole subtree as one run of ids per level, at two selects per level
+- `Succincter` and `RRR` chosen per bit vector through the `RankSelector` interface
+- Memory and per-keystroke time measured against the same search in plain Go
+
+Measured (Go 1.27.4, Intel Core Ultra 9 285K): the whole index is 4,080 KB against 13,711 KB for
+plain Go and 6,275 KB for the text file, and a keystroke takes 31.4 µs at the median against
+2.2 µs. Walkthrough: [An autocomplete smaller than the list it
+completes](https://slow-is-smooth.io/blog/an-autocomplete-smaller-than-the-list-it-completes/).
+
+---
+
 ## Performance Notes
 
 All examples demonstrate O(1) rank and O(log n) select queries, compared to O(n) for naive filtering approaches:
